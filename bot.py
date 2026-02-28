@@ -41,8 +41,21 @@ PAMM_GROUP_ID      = int(os.getenv("PAMM_GROUP_ID", "-5220645085"))  # Apex Gold
 # RSS feed de Metais (Ouro/XAUUSD) da Investing.com
 XAUUSD_RSS = "https://www.investing.com/rss/commodities_Metals.rss"
 
-# Controle de notícias já enviadas
-sent_news: set = set()
+# Arquivo para persistir notícias já enviadas entre restarts
+SENT_NEWS_FILE = "sent_news.txt"
+
+def load_sent_news() -> set:
+    if os.path.exists(SENT_NEWS_FILE):
+        with open(SENT_NEWS_FILE, "r") as f:
+            return set(line.strip() for line in f if line.strip())
+    return set()
+
+def save_sent_news(news_id: str):
+    with open(SENT_NEWS_FILE, "a") as f:
+        f.write(news_id + "\n")
+
+# Carrega notícias já enviadas do arquivo
+sent_news: set = load_sent_news()
 
 active_chats: set = set()
 user_language: dict = {}
@@ -250,6 +263,7 @@ async def check_news_job(ctx: ContextTypes.DEFAULT_TYPE):
                 reply_markup=keyboard,
             )
             sent_news.add(news_id)
+            save_sent_news(news_id)
             logger.info(f"Notícia enviada: {title_en}")
 
     except Exception as e:
